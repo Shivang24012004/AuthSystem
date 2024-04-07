@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link,useNavigate } from "react-router-dom";
 
 export default function SignUp() {
   const [formData, setFormData] = useState({});
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(false);
+  const navigate=useNavigate();
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.id]: e.target.value });
   };
@@ -23,11 +24,12 @@ export default function SignUp() {
       const data = await res.json();
       console.log(data);
       setLoading(false);
-      if(!data.success) {
+      if(data.success===false) {
         setError(true);
         return;
       }
       setError(false);
+      navigate('/sign-in');
     } catch (error) {
       setLoading(false);
       setError(true);
@@ -97,15 +99,4 @@ export default function SignUp() {
   );
 }
 
-const InputBox = ({ type, placeholder, id }) => {
-  return (
-    <div className="mb-6">
-      <input
-        type={type}
-        placeholder={placeholder}
-        id={id}
-        className="w-full rounded-md border border-stroke bg-transparent px-5 py-3 text-base text-body-color outline-none focus:border-primary focus-visible:shadow-none dark:border-dark-3 "
-      />
-    </div>
-  );
-};
+
