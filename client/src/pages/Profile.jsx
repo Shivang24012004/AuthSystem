@@ -64,7 +64,8 @@ export default function Profile() {
                       onChange={(e) => setImage(e.target.files[0])}
                     />
                     <img
-                      src={formData.profilePicture||currentUser.profilePicture}
+                      src={formData.profilePicture||currentUser.profilePicture} 
+                      
                       className="w-24 h-24 mx-auto my-4 rounded-full object-cover"
                       alt=""
                       onClick={() => fileRef.current.click()}
