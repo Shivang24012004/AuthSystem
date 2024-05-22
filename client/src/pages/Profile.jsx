@@ -1,20 +1,32 @@
 import React, { useState } from "react";
 import { useSelector } from "react-redux";
 import { useRef, useEffect } from "react";
-import { getDownloadURL, getStorage, ref, uploadBytesResumable } from "firebase/storage";
+import {
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytesResumable,
+} from "firebase/storage";
 import { app } from "../firebase";
 import { useDispatch } from "react-redux";
-import { updateUserStart,updateUserSuccess,updateUserFailure } from "../redux/user/userSlice";
+import {
+  updateUserStart,
+  updateUserSuccess,
+  updateUserFailure,
+  deleteUserStart,
+  deleteUserFailure,
+  deleteUserSuccess,
+} from "../redux/user/userSlice";
 
 export default function Profile() {
-  const { currentUser,loading,error } = useSelector((state) => state.user);
+  const { currentUser, loading, error } = useSelector((state) => state.user);
   const fileRef = useRef(null);
   const [image, setImage] = useState(null);
   const [imagePercent, setImagePercent] = useState(0);
   const [imageError, setImageError] = useState(false);
-  const [formData,setFormData] = useState({});
-  const [updateSuccess,setUpdateSuccess]=useState(false);
-  const dispatch=useDispatch();
+  const [formData, setFormData] = useState({});
+  const [updateSuccess, setUpdateSuccess] = useState(false);
+  const dispatch = useDispatch();
 
   useEffect(() => {
     if (image) {
@@ -28,7 +40,7 @@ export default function Profile() {
     const storageRef = ref(storage, fileName);
     const uploadTask = uploadBytesResumable(storageRef, image);
     uploadTask.on(
-      'state_changed',
+      "state_changed",
       (snapshot) => {
         const progress =
           (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
@@ -45,33 +57,48 @@ export default function Profile() {
     );
   };
 
-  const handleChange=(e)=>{
-    setFormData({...formData,[e.target.id]:e.target.value});
-  }
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.id]: e.target.value });
+  };
   console.log(formData);
 
-  const handleSubmit=async(e)=>{
+  const handleSubmit = async (e) => {
     e.preventDefault();
     try {
       dispatch(updateUserStart());
-      const res=await fetch(`api/user/update/${currentUser._id}`,{
-        method:"POST",
-        headers:{
-          "Content-Type":"application/json"
+      const res = await fetch(`api/user/update/${currentUser._id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
-        body:JSON.stringify(formData)
-      })
-      const data=await res.json();
-      if(data.success===false) {
+        body: JSON.stringify(formData),
+      });
+      const data = await res.json();
+      if (data.success === false) {
         dispatch(updateUserFailure(data));
         return;
       }
       dispatch(updateUserSuccess(data));
       setUpdateSuccess(true);
+    } catch (error) {}
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+      dispatch(deleteUserStart());
+      const res = await fetch(`api/user/delete/${currentUser._id}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (data.success === false) {
+        dispatch(deleteUserFailure(data));
+        return;
+      }
+      dispatch(deleteUserSuccess());
     } catch (error) {
-      
+      dispatch(deleteUserFailure(error));
     }
-  }
+  };
 
   return (
     <section className="bg-gray-1 py-20 dark:bg-dark lg:py-[40px]">
@@ -93,24 +120,27 @@ export default function Profile() {
                       onChange={(e) => setImage(e.target.files[0])}
                     />
                     <img
-                      src={formData.profilePicture||currentUser.profilePicture} 
-                      
+                      src={
+                        formData.profilePicture || currentUser.profilePicture
+                      }
                       className="w-24 h-24 mx-auto my-4 rounded-full object-cover"
                       alt=""
                       onClick={() => fileRef.current.click()}
                     />
                     <p className="text-sm self-center mb-4">
-                      {
-                        imageError?(
-                          <span className="text-red-700">Error Uploading image</span>
-                        ) : imagePercent>0 && imagePercent<100 ? (
-                          <span className="text-slate-700">{`Uploading : ${imagePercent}%...`}</span> 
-                        ) : imagePercent === 100 ? (
-                          <span className="text-green-700">Image uploaded successfully</span>
-                        ) : (
-                          ''
-                        )
-                      }
+                      {imageError ? (
+                        <span className="text-red-700">
+                          Error Uploading image
+                        </span>
+                      ) : imagePercent > 0 && imagePercent < 100 ? (
+                        <span className="text-slate-700">{`Uploading : ${imagePercent}%...`}</span>
+                      ) : imagePercent === 100 ? (
+                        <span className="text-green-700">
+                          Image uploaded successfully
+                        </span>
+                      ) : (
+                        ""
+                      )}
                     </p>
                     <div className="mb-6">
                       <input
@@ -143,20 +173,27 @@ export default function Profile() {
                     </div>
 
                     <button className="bg-slate-700 text-white p-3 rounded-lg w-full transition hover:bg-opacity-90">
-                      {loading?"Loading...":"Update"}
+                      {loading ? "Loading..." : "Update"}
                     </button>
                   </form>
 
                   <div className="flex justify-between mt-2">
-                    <span className="text-red-700 cursor-pointer">
+                    <span
+                      className="text-red-700 cursor-pointer"
+                      onClick={handleDeleteAccount}
+                    >
                       Delete Account
                     </span>
                     <span className="text-red-700 cursor-pointer">
                       Sign Out
                     </span>
                   </div>
-                  <p className="text-red-700 mt-2">{error && "Something went wrong!"}</p>
-                  <p className="text-green-700 mt-2">{updateSuccess && "Successful update!"}</p>
+                  <p className="text-red-700 mt-2">
+                    {error && error.message}
+                  </p>
+                  <p className="text-green-700 mt-2">
+                    {updateSuccess && "Successful update!"}
+                  </p>
                 </div>
               </div>
             </div>
