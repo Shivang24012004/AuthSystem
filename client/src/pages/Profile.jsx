@@ -3,15 +3,18 @@ import { useSelector } from "react-redux";
 import { useRef, useEffect } from "react";
 import { getDownloadURL, getStorage, ref, uploadBytesResumable } from "firebase/storage";
 import { app } from "../firebase";
+import { useDispatch } from "react-redux";
+import { updateUserStart,updateUserSuccess,updateUserFailure } from "../redux/user/userSlice";
 
 export default function Profile() {
-  const { currentUser } = useSelector((state) => state.user);
+  const { currentUser,loading,error } = useSelector((state) => state.user);
   const fileRef = useRef(null);
   const [image, setImage] = useState(null);
   const [imagePercent, setImagePercent] = useState(0);
   const [imageError, setImageError] = useState(false);
   const [formData,setFormData] = useState({});
-  // console.log(formData);
+  const [updateSuccess,setUpdateSuccess]=useState(false);
+  const dispatch=useDispatch();
 
   useEffect(() => {
     if (image) {
@@ -42,7 +45,33 @@ export default function Profile() {
     );
   };
 
+  const handleChange=(e)=>{
+    setFormData({...formData,[e.target.id]:e.target.value});
+  }
+  console.log(formData);
 
+  const handleSubmit=async(e)=>{
+    e.preventDefault();
+    try {
+      dispatch(updateUserStart());
+      const res=await fetch(`api/user/update/${currentUser._id}`,{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json"
+        },
+        body:JSON.stringify(formData)
+      })
+      const data=await res.json();
+      if(data.success===false) {
+        dispatch(updateUserFailure(data));
+        return;
+      }
+      dispatch(updateUserSuccess(data));
+      setUpdateSuccess(true);
+    } catch (error) {
+      
+    }
+  }
 
   return (
     <section className="bg-gray-1 py-20 dark:bg-dark lg:py-[40px]">
@@ -55,7 +84,7 @@ export default function Profile() {
                   <h1 className="text-3xl text-center font-semibold my-6">
                     Profile
                   </h1>
-                  <form>
+                  <form onSubmit={handleSubmit}>
                     <input
                       type="file"
                       ref={fileRef}
@@ -90,6 +119,7 @@ export default function Profile() {
                         placeholder="Username"
                         id="username"
                         className="w-full rounded-md border border-stroke bg-transparent px-5 py-3 text-base text-body-color outline-none focus:border-primary focus-visible:shadow-none dark:border-dark-3 "
+                        onChange={handleChange}
                       />
                     </div>
                     <div className="mb-6">
@@ -99,6 +129,7 @@ export default function Profile() {
                         placeholder="Email"
                         id="email"
                         className="w-full rounded-md border border-stroke bg-transparent px-5 py-3 text-base text-body-color outline-none focus:border-primary focus-visible:shadow-none dark:border-dark-3 "
+                        onChange={handleChange}
                       />
                     </div>
                     <div className="mb-6">
@@ -107,11 +138,12 @@ export default function Profile() {
                         placeholder="Password"
                         id="password"
                         className="w-full rounded-md border border-stroke bg-transparent px-5 py-3 text-base text-body-color outline-none focus:border-primary focus-visible:shadow-none dark:border-dark-3 "
+                        onChange={handleChange}
                       />
                     </div>
 
                     <button className="bg-slate-700 text-white p-3 rounded-lg w-full transition hover:bg-opacity-90">
-                      Update
+                      {loading?"Loading...":"Update"}
                     </button>
                   </form>
 
@@ -123,6 +155,8 @@ export default function Profile() {
                       Sign Out
                     </span>
                   </div>
+                  <p className="text-red-700 mt-2">{error && "Something went wrong!"}</p>
+                  <p className="text-green-700 mt-2">{updateSuccess && "Successful update!"}</p>
                 </div>
               </div>
             </div>
